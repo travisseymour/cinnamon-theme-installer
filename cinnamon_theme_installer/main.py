@@ -4,10 +4,11 @@ Cinnamon Theme Installer - A PySide6 GUI application for installing Cinnamon the
 
 import sys
 from importlib.metadata import version as get_pkg_version, PackageNotFoundError
+from importlib.resources import files
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -333,7 +334,19 @@ class ThemeInstallerWindow(QMainWindow):
 
 def main():
     """Main entry point for the application."""
-    app = QApplication.instance() or QApplication(sys.argv)
+    # Check if running on Linux
+    if sys.platform != "linux":
+        print("Error: Cinnamon Theme Installer only runs on Linux.", file=sys.stderr)
+        sys.exit(1)
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+
+    # Set application icon
+    icon_path = files("cinnamon_theme_installer").joinpath("Icon.png")
+    app.setWindowIcon(QIcon(str(icon_path)))
+
     window = ThemeInstallerWindow()
     window.show()
     sys.exit(app.exec())

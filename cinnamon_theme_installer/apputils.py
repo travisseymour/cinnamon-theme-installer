@@ -4,7 +4,6 @@ Handles theme archive inspection and installation.
 """
 
 import configparser
-import io
 import os
 import tarfile
 import zipfile
@@ -302,9 +301,7 @@ def analyze_archive_full(archive_path: str | Path) -> ArchiveAnalysis:
             expected_path = f"{folder_name}/{comp_name}/{required_file}"
 
             # Check if the required file exists in the archive
-            file_found = any(
-                p == expected_path or p.rstrip("/") == expected_path for p in all_archive_paths
-            )
+            file_found = any(p == expected_path or p.rstrip("/") == expected_path for p in all_archive_paths)
 
             if not file_found:
                 valid = False
@@ -359,9 +356,7 @@ def analyze_archive_full(archive_path: str | Path) -> ArchiveAnalysis:
     # Theme is installable only if:
     # 1. All required components are present AND valid
     # 2. No security issues
-    analysis.is_installable = (
-        REQUIRED_COMPONENTS.issubset(found_required) and not analysis.has_security_issues
-    )
+    analysis.is_installable = REQUIRED_COMPONENTS.issubset(found_required) and not analysis.has_security_issues
 
     return analysis
 

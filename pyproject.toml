@@ -18,7 +18,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Cinnamon_Theme_Installer"
-version = "2026.4.30.3"
+version = "2026.4.30.4"
 description = "Graphical Installer for Cinnamon Desktop Themes."
 authors = [{ name = "Travis L. Seymour, PhD", email = "nogard@ucsc.edu" }]
 license = { file = "LICENSE" }
