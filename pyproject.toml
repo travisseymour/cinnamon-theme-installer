@@ -1,0 +1,70 @@
+# To install deps from toml
+# -------------------------
+# > pip install .[dev] && pip uninstall .
+# OR
+# > make install
+#
+# To create a new version
+# -------------------------
+# 1. Change the version here
+# 2. do a git commit
+# 3. do a git push
+
+# NOTE: Fix PySide6 xcb plugin error on linux by installing: sudo apt install libxcb-cursor0
+
+[build-system]
+requires = ["setuptools>=46.4.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Cinnamon_Theme_Installer"
+version = "2026.4.30.3"
+description = "Graphical Installer for Cinnamon Desktop Themes."
+authors = [{ name = "Travis L. Seymour, PhD", email = "nogard@ucsc.edu" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+keywords = ["mint", "cinnamon", "desktop", "theme", "gui"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "PySide6>=6.5.0",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/travisseymour/cinnamon-theme-installer/issues"
+"Documentation" = "https://github.com/travisseymour/cinnamon-theme-installer#readme"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "build",
+    "check-manifest",
+]
+
+[project.scripts]
+cinnamon-theme-installer = "cinnamon_theme_installer.main:main"
+cti = "cinnamon_theme_installer.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cinnamon_theme_installer"]
+namespaces = false
+
+# pull in any files defined in MANIFEST.in use with importlib.resources
+[tool.setuptools]
+include-package-data = true
+
+[tool.ruff]
+line-length = 120
+lint.ignore = [
+#    "F821",  # undefined name
+    "F841",  # Ignore unused variables (e.g., `_` placeholders)
+    "E722"   # Ignore bare except (ensure explicit exceptions in real code)
+]
