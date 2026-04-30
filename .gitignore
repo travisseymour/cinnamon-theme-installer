@@ -181,4 +181,4 @@ cython_debug/
 old/
 *.zip
 *.tar.gz
-other/
+other
