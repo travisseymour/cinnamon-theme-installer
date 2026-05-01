@@ -63,7 +63,7 @@ class ThemeInstallerWindow(QMainWindow):
 
     def setup_ui(self):
         """Initialize the user interface."""
-        self.setWindowTitle(f"Cinnamon Theme Installer ver. {get_version()}")
+        self.setWindowTitle(f"Cinnamon Theme Installer | v{get_version()} | Travis L. Seymour, PhD")
         self.resize(925, 573)
         self.setMinimumSize(700, 450)
         self.center_on_screen()
