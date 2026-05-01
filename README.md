@@ -4,11 +4,11 @@ Travis L. Seymour, PhD | April 30 2026
 
 ---
 
-> currently aimed at installing themes from here: https://www.opendesktop.org/s/cinnamon/browse?cat=133&ord=latest. Themes from elsewhere could work, but are untested.
+> currently aimed at installing themes from here: https://www.opendesktop.org/s/cinnamon/browse?cat=133&ord=latest, and https://www.gnome-look.org/browse?cat=133&ord=latest. Themes from elsewhere could work, but are untested.
 
 ---
-[![Cinnamon Theme Installer Interface](cinnamon_theme_installer/interface.png)](cinnamon_theme_installer/interface.png)
----
+
+## [![Cinnamon Theme Installer Interface](cinnamon_theme_installer/interface.png)](cinnamon_theme_installer/interface.png)
 
 ## How-To
 

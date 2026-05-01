@@ -59,6 +59,7 @@ class ThemeInstallerWindow(QMainWindow):
         super().__init__()
         self.current_archive: Path | None = None
         self.is_installable = False
+        self.needs_force_install = False  # True if installable only with force
         self.setup_ui()
 
     def setup_ui(self):
@@ -98,12 +99,19 @@ class ThemeInstallerWindow(QMainWindow):
         self.instruction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.instruction_label)
 
-        # Security warning label (hidden by default)
+        # Security warning label (hidden by default) - RED, blocks install
         self.security_label = QLabel()
         self.security_label.setStyleSheet("color: white; background-color: #d32f2f; padding: 10px; border-radius: 5px;")
         self.security_label.setWordWrap(True)
         self.security_label.setVisible(False)
         layout.addWidget(self.security_label)
+
+        # Warning label for missing components (hidden by default) - ORANGE, allows force install
+        self.warning_label = QLabel()
+        self.warning_label.setStyleSheet("color: white; background-color: #f57c00; padding: 10px; border-radius: 5px;")
+        self.warning_label.setWordWrap(True)
+        self.warning_label.setVisible(False)
+        layout.addWidget(self.warning_label)
 
         # Contents section
         contents_label = QLabel("Contents")
@@ -207,22 +215,35 @@ class ThemeInstallerWindow(QMainWindow):
         try:
             analysis = analyze_archive_full(archive_path)
             self.is_installable = analysis.is_installable
+            self.needs_force_install = not analysis.is_installable and analysis.can_force_install
             self.populate_table(analysis.components)
 
             # Update instruction label with theme name
             self.instruction_label.setText(f"Theme: {analysis.theme_name}")
 
-            # Show security warnings if any
+            # Show security errors if any (RED - blocks install entirely)
             if analysis.has_security_issues:
-                warning_text = "Security Issues Detected:\n" + "\n".join(
+                error_text = "Security Issues Detected (cannot install):\n" + "\n".join(
                     f"  - {issue}" for issue in analysis.security_issues
                 )
-                self.security_label.setText(warning_text)
+                self.security_label.setText(error_text)
                 self.security_label.setVisible(True)
             else:
                 self.security_label.setVisible(False)
 
-            self.install_button.setEnabled(analysis.is_installable)
+            # Show warnings for missing components (ORANGE - can force install)
+            if analysis.has_warnings and not analysis.has_security_issues:
+                warning_text = "Missing Components (can still install):\n" + "\n".join(
+                    f"  - {issue}" for issue in analysis.warnings
+                )
+                self.warning_label.setText(warning_text)
+                self.warning_label.setVisible(True)
+            else:
+                self.warning_label.setVisible(False)
+
+            # Enable install if fully valid OR can force install
+            can_install = analysis.is_installable or analysis.can_force_install
+            self.install_button.setEnabled(can_install)
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to analyze archive:\n{str(e)}")
@@ -232,9 +253,11 @@ class ThemeInstallerWindow(QMainWindow):
         self.table.setRowCount(0)
         self.current_archive = None
         self.is_installable = False
+        self.needs_force_install = False
         self.install_button.setEnabled(False)
         self.instruction_label.setText("(drag/drop theme archive on window to inspect)")
         self.security_label.setVisible(False)
+        self.warning_label.setVisible(False)
 
     def populate_table(self, components: list[ThemeComponent]):
         """Populate the table with component information."""
@@ -295,16 +318,28 @@ class ThemeInstallerWindow(QMainWindow):
         if not self.current_archive:
             return
 
-        reply = QMessageBox.question(
-            self,
-            "Confirm Installation",
-            f"Install theme from:\n{self.current_archive.name}?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
-        )
+        # Different confirmation message for force install
+        if self.needs_force_install:
+            reply = QMessageBox.warning(
+                self,
+                "Install Partial Theme?",
+                f"This theme is missing some components.\n\n"
+                f"Archive: {self.current_archive.name}\n\n"
+                f"Install anyway? The theme may not work completely.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+        else:
+            reply = QMessageBox.question(
+                self,
+                "Confirm Installation",
+                f"Install theme from:\n{self.current_archive.name}?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
 
         if reply == QMessageBox.StandardButton.Yes:
-            success, message = install_theme(self.current_archive)
+            success, message = install_theme(self.current_archive, force=self.needs_force_install)
             if success:
                 QMessageBox.information(self, "Success", message)
             else:

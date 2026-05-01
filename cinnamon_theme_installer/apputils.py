@@ -56,9 +56,12 @@ class ArchiveAnalysis:
     theme_name: str  # From index.theme or folder name
     folder_name: str  # Actual folder name in archive
     components: list[ThemeComponent] = field(default_factory=list)
-    is_installable: bool = False
+    is_installable: bool = False  # Fully valid, no warnings
+    can_force_install: bool = False  # Has warnings but no security issues
     security_issues: list[str] = field(default_factory=list)
     has_security_issues: bool = False
+    warnings: list[str] = field(default_factory=list)
+    has_warnings: bool = False
 
 
 def _check_path_traversal(path: str) -> bool:
@@ -353,10 +356,28 @@ def analyze_archive_full(archive_path: str | Path) -> ArchiveAnalysis:
                 )
             )
 
-    # Theme is installable only if:
+    # Check for missing required components and add warnings
+    missing_required = REQUIRED_COMPONENTS - found_required
+    for missing in missing_required:
+        comp_info = KNOWN_COMPONENTS.get(missing, {})
+        role = comp_info.get("role", "Unknown")
+        analysis.warnings.append(f"Missing required component: {missing} ({role})")
+
+    analysis.has_warnings = len(analysis.warnings) > 0
+
+    # Theme is fully installable only if:
     # 1. All required components are present AND valid
     # 2. No security issues
     analysis.is_installable = REQUIRED_COMPONENTS.issubset(found_required) and not analysis.has_security_issues
+
+    # Theme can be force-installed if:
+    # 1. No security issues (we never bypass security)
+    # 2. Has at least a cinnamon/ folder with cinnamon.css (the actual theme content)
+    has_cinnamon = "cinnamon" in found_required or (
+        "cinnamon" in items and
+        any(p == f"{folder_name}/cinnamon/cinnamon.css" for p in all_archive_paths)
+    )
+    analysis.can_force_install = not analysis.has_security_issues and has_cinnamon
 
     return analysis
 
@@ -366,9 +387,13 @@ def get_theme_install_dir() -> Path:
     return Path.home() / ".themes"
 
 
-def install_theme(archive_path: str | Path) -> tuple[bool, str]:
+def install_theme(archive_path: str | Path, force: bool = False) -> tuple[bool, str]:
     """
     Install a theme from an archive.
+
+    Args:
+        archive_path: Path to the theme archive
+        force: If True, install even if missing non-security components
 
     Returns:
         tuple: (success, message)
@@ -380,12 +405,18 @@ def install_theme(archive_path: str | Path) -> tuple[bool, str]:
     try:
         analysis = analyze_archive_full(archive_path)
 
+        # Security issues always block installation
         if analysis.has_security_issues:
             issues = "\n".join(f"  - {issue}" for issue in analysis.security_issues)
             return False, f"Security issues detected:\n{issues}"
 
-        if not analysis.is_installable:
+        # Check installability (can be bypassed with force)
+        if not analysis.is_installable and not force:
             return False, "Theme is missing required components (cinnamon/ with cinnamon.css and index.theme)"
+
+        # Even with force, we need at least a cinnamon folder
+        if not analysis.can_force_install and not analysis.is_installable:
+            return False, "Theme is missing cinnamon/ folder with cinnamon.css - cannot install"
 
         # Extract archive with security filter for tar files
         if archive_path.suffix == ".zip" or archive_path.name.endswith(".zip"):
